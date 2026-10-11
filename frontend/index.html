@@ -1,0 +1,323 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>DriftLab — Machine Intelligence</title>
+  <link rel="stylesheet" href="/assets/style.css">
+  <script src="/assets/app.js" defer></script>
+
+  <link rel="stylesheet" href="/assets/day8.css">
+  <script src="/assets/day8.js" defer></script>
+
+</head>
+<body>
+<header class="hero wrap">
+  <div class="hero-content">
+    <div class="eyebrow">AN ENGINEERING LABORATORY · 2026</div>
+    <h1>Drift<span class="serif-italic">Lab.</span></h1>
+    <p class="lead">A machine-learning observatory for <em>predictive maintenance</em> — from sensor readings and model inference to monitoring, drift, and evidence.</p>
+    <p class="sublead">Explore a model's decisions, trace its predictions, and study how changing data affects the systems we deploy.</p>
+    <div class="hero-status">
+      <span id="api-dot" class="status-dot"></span>
+      <span id="api-status">Connecting to the model service…</span>
+      <span class="hero-rule"></span>
+      <span id="hero-version">VERSION —</span>
+    </div>
+  </div>
+  <div class="hero-ornament" aria-hidden="true">
+    <svg viewBox="0 0 220 220">
+      <circle cx="110" cy="110" r="91" fill="none" stroke="currentColor" stroke-width="1"/>
+      <circle cx="110" cy="110" r="87" fill="none" stroke="currentColor" stroke-width=".5"/>
+      <g id="rosette"></g>
+      <circle cx="110" cy="110" r="32" fill="#e8e7e1" stroke="currentColor"/>
+      <text x="110" y="121" text-anchor="middle" font-family="Georgia,serif" font-size="32">D</text>
+    </svg>
+  </div>
+</header>
+<div class="rule"></div>
+<main class="wrap">
+  <div class="toolbar">
+    <div>
+      <div class="eyebrow">THE WORKSPACE</div>
+      <p class="toolbar-note">A quiet interface for testing intelligent machinery.</p>
+    </div>
+    <nav id="tabs" aria-label="Workspace sections">
+      <button class="tab active" data-target="prediction">Prediction</button>
+      <button class="tab" data-target="history">Observations</button>
+      <button class="tab" data-target="performance">Performance</button>
+      <button class="tab" data-target="drift">Drift study</button>
+    </nav>
+  </div>
+
+  <section class="panel" id="prediction">
+    <div class="section-head">
+      <div>
+        <span class="eyebrow">01 / INFERENCE</span>
+        <h2>Machine assessment</h2>
+        <p>Enter operating measurements to estimate recorded failure risk.</p>
+      </div>
+      <span class="counter">MODEL / <span class="model-version">—</span></span>
+    </div>
+    <div class="two-col">
+      <form id="predict-form" class="paper">
+        <div class="card-index">INPUT PARAMETERS <span>01 — 06</span></div>
+        <div class="field-grid">
+          <label>Machine type
+            <select name="machine_type">
+              <option value="L">L — Low</option>
+              <option value="M">M — Medium</option>
+              <option value="H">H — High</option>
+            </select>
+          </label>
+          <label>Air temperature <small>KELVIN</small>
+            <input required name="air_temperature" type="number" step="any" min="0" value="302.5">
+          </label>
+          <label>Process temperature <small>KELVIN</small>
+            <input required name="process_temperature" type="number" step="any" min="0" value="312.8">
+          </label>
+          <label>Rotational speed <small>RPM</small>
+            <input required name="rotational_speed" type="number" step="any" min="0" value="1420">
+          </label>
+          <label>Torque <small>NM</small>
+            <input required name="torque" type="number" step="any" min="0" value="48.2">
+          </label>
+          <label>Tool wear <small>MINUTES</small>
+            <input required name="tool_wear" type="number" step="any" min="0" value="180">
+          </label>
+        </div>
+        <button class="primary" type="submit">Run assessment <span>↗</span></button>
+        <div class="message" id="predict-message" role="status"></div>
+      </form>
+
+      <div class="paper result-paper">
+        <div class="card-index">PREDICTION REPORT <span>LIVE / API</span></div>
+        <div class="result-center" id="result-empty">
+          <div class="outline-icon">↗</div>
+          <p>Awaiting a machine assessment.</p>
+          <small>Submit readings on the left to produce a model-grounded result.</small>
+        </div>
+        <div id="result-full" hidden>
+          <div class="eyebrow">ESTIMATED FAILURE PROBABILITY</div>
+          <div class="big-number" id="pred-percent">—</div>
+          <div class="thin-track"><div id="pred-bar"></div></div>
+          <div class="result-category">
+            <span id="pred-class">—</span>
+            <span id="pred-risk">—</span>
+          </div>
+          <div class="kv"><span>Decision threshold</span><strong id="pred-threshold">—</strong></div>
+          <div class="kv"><span>Model version</span><strong id="pred-version">—</strong></div>
+          <div class="kv"><span>Prediction ID</span><code id="pred-id">—</code></div>
+          <p class="footnote">A model estimate, not a guarantee of future machine behavior.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel" id="history" hidden>
+    <div class="section-head">
+      <div>
+        <span class="eyebrow">02 / OBSERVATIONS</span>
+        <h2>Prediction ledger</h2>
+        <p>Review sensor assessments and recorded outcomes from SQLite.</p>
+      </div>
+      <button class="quiet-button" id="refresh-history">↻ Refresh records</button>
+    </div>
+    <div class="paper">
+      <div class="card-index">RECENT EVENTS <span id="history-count">— RECORDS</span></div>
+      <div id="history-message" class="message"></div>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Recorded at (UTC)</th><th>Machine</th>
+              <th>Risk estimate</th><th>Prediction</th>
+              <th>Outcome</th><th>Version</th>
+            </tr>
+          </thead>
+          <tbody id="history-body">
+            <tr><td colspan="6">Loading records…</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="footnote">An outcome is shown only when it has been recorded; missing outcomes are not presumed normal.</p>
+    </div>
+  </section>
+
+  <section class="panel" id="performance" hidden>
+    <div class="section-head">
+      <div>
+        <span class="eyebrow">03 / EVALUATION</span>
+        <h2>Model performance</h2>
+        <p>Metrics from predictions with known outcomes.</p>
+      </div>
+      <button class="quiet-button" id="refresh-performance">↻ Refresh metrics</button>
+    </div>
+    <div id="performance-message" class="message"></div>
+    <div class="metric-grid" id="metric-grid">
+      <div class="paper metric"><div class="eyebrow">LABELLED OBSERVATIONS</div><div class="metric-value" id="metric-labeled">—</div></div>
+      <div class="paper metric"><div class="eyebrow">PRECISION</div><div class="metric-value" id="metric-precision">—</div></div>
+      <div class="paper metric"><div class="eyebrow">RECALL</div><div class="metric-value" id="metric-recall">—</div></div>
+      <div class="paper metric"><div class="eyebrow">F1 SCORE</div><div class="metric-value" id="metric-f1">—</div></div>
+    </div>
+    <div class="paper note-card">
+      <span class="eyebrow">INTERPRETING THE EVIDENCE</span>
+      <p>Performance estimates require real outcomes. The configured minimum number of labels is a reporting guard, not statistical proof of reliability. Results may mix model versions; compare version-specific cohorts before making release decisions.</p>
+    </div>
+  </section>
+
+  <section class="panel" id="drift" hidden>
+    <div class="section-head">
+      <div>
+        <span class="eyebrow">04 / DISTRIBUTION SHIFT</span>
+        <h2>Drift study</h2>
+        <p>Compare baseline machine measurements against current data.</p>
+      </div>
+      <span class="counter">EXPERIMENTAL / PSI</span>
+    </div>
+    <div class="two-col">
+      <div class="paper">
+        <div class="card-index">EXPERIMENT SETUP <span>CSV / CSV</span></div>
+        <label class="upload">Reference sensor CSV
+          <input id="reference-file" type="file" accept=".csv,text/csv">
+        </label>
+        <label class="upload">Current sensor CSV
+          <input id="current-file" type="file" accept=".csv,text/csv">
+        </label>
+        <label class="checkbox-line">
+          <input type="checkbox" id="simulate-shift">
+          Simulate +15 Nm torque on current readings
+        </label>
+        <p class="footnote">Both files need at least 30 rows and the six AI4I sensor columns. A simulated shift is clearly identified and is not real production drift.</p>
+        <button class="primary" id="run-drift">Compare distributions <span>↗</span></button>
+        <div class="message" id="drift-message" role="status"></div>
+      </div>
+      <div class="paper drift-summary">
+        <div class="card-index">DISTRIBUTION REPORT <span>ON DEMAND</span></div>
+        <div id="drift-result" class="result-center">
+          <div class="outline-icon">≋</div>
+          <p>No comparison yet.</p>
+          <small>Upload reference and current readings to see a measured drift report.</small>
+        </div>
+      </div>
+    </div>
+
+    <div id="drift-visuals" hidden>
+      <div class="drift-kpis">
+        <div class="paper"><div class="eyebrow">FEATURES FLAGGED</div><div class="metric-value" id="drift-flagged">—</div><p class="footnote">Heuristic indicators, not accuracy loss.</p></div>
+        <div class="paper"><div class="eyebrow">BASELINE ROWS</div><div class="metric-value" id="drift-ref-size">—</div></div>
+        <div class="paper"><div class="eyebrow">CURRENT ROWS</div><div class="metric-value" id="drift-current-size">—</div></div>
+      </div>
+      <div class="paper chart-card">
+        <div class="card-index">FEATURE DISTRIBUTIONS <span>REFERENCE / CURRENT</span></div>
+        <div class="chart-toolbar">
+          <label>Examine feature <select id="drift-feature"></select></label>
+          <div class="chart-legend">
+            <span><i class="legend-dot reference"></i> Reference</span>
+            <span><i class="legend-dot current"></i> Current</span>
+          </div>
+        </div>
+        <div id="drift-chart" role="img" aria-label="Histogram comparing reference and current sensor measurements"></div>
+        <p id="drift-chart-note" class="footnote"></p>
+      </div>
+      <div class="paper drift-feature-card">
+        <div class="card-index">FEATURE DRIFT REGISTER <span>BACKEND METRICS</span></div>
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>Feature</th><th>Method</th><th>Score</th><th>Flag</th></tr></thead>
+            <tbody id="drift-features-body"></tbody>
+          </table>
+        </div>
+        <p class="footnote">Numeric measurements use backend PSI with baseline-quantile bins and smoothing. Machine type uses total variation distance. These measures are not directly comparable.</p>
+      </div>
+    </div>
+
+    <div class="paper drift-history-card">
+      <div class="card-index">
+        DRIFT CHECK HISTORY
+        <span id="drift-history-count">— SAVED CHECKS</span>
+      </div>
+      <p class="footnote">Each check is saved with its model version and simulation marker. This is a count of flagged features, not model accuracy.</p>
+      <div id="drift-timeline" aria-label="Past drift checks timeline"></div>
+      <div class="chart-legend">
+        <span><i class="legend-dot reference"></i> Uploaded data</span>
+        <span><i class="legend-dot current"></i> Declared simulation</span>
+      </div>
+      <button class="quiet-button" id="refresh-drift-history">↻ Refresh timeline</button>
+      <div id="drift-history-message" class="message" role="status"></div>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr><th>Recorded at</th><th>Model</th><th>Source</th><th>Flagged</th><th>Ref / Current</th></tr>
+          </thead>
+          <tbody id="drift-history-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <span>DRIFTLAB / MACHINE INTELLIGENCE</span>
+    <span>TRAIN · INFER · OBSERVE</span>
+    <span>2026</span>
+  </footer>
+
+  
+<section class="registry-section" id="registry">
+  <div class="eyebrow">
+    05 / MODEL GOVERNANCE
+  </div>
+
+  <h2>Model registry</h2>
+
+  <p>
+    Train new versions offline. Compare before promotion.
+    Approve explicitly.
+  </p>
+
+  <p>
+    ACTIVE MODEL ·
+    <strong id="registry-active">—</strong>
+  </p>
+
+  <div id="registry-entries"></div>
+
+  <label>
+    Target model version
+    <input
+      id="registry-version"
+      placeholder="v2"
+    >
+  </label>
+
+  <label>
+    Confirmation phrase
+    <input
+      id="registry-confirm"
+      placeholder="ACTIVATE v2"
+    >
+  </label>
+
+  <div class="registry-actions">
+    <button id="registry-refresh" type="button">
+      Refresh registry
+    </button>
+
+    <button id="registry-promote" type="button">
+      Promote reviewed candidate
+    </button>
+
+    <button id="registry-rollback" type="button">
+      Rollback
+    </button>
+  </div>
+
+  <p id="registry-message" role="status"></p>
+</section>
+
+
+
+</main>
+</body>
+</html>

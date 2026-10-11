@@ -1,0 +1,40 @@
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.venv-linux/
+venv/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Local configuration
+.env
+.env.*
+!.env.example
+
+# Persistent application data
+data/*.sqlite
+data/*.sqlite3
+data/*.db
+backups/
+
+# Trained model artifacts
+models/*.jsonl
+models/.activation.lock
+models/.active-*
+models/active.day8.tmp
+models/v*/
+
+# Local datasets
+data/*.csv
+
+# Generated artifacts
+*.zip
+
+# IDE and OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
